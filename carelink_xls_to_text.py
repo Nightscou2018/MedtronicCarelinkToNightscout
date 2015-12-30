@@ -1,4 +1,10 @@
 '''
+TO-DO:
+- 
+- 
+- Fix all comments
+'''
+'''
 Copyright (c) 2015 Michael Stebbins
 Based on code from KainokiKaede (https://gist.github.com/KainokiKaede/7251872)
 
