@@ -55,26 +55,48 @@ list_of_days = [date,walking steps, cycle miles, run miles, [walk segments],[bik
 
 # IMPORTS
 #---------------------------------------------------------------------------------------------------
-import json
+#import csv
 import datetime
-from dateutil import tz
+#from dateutil import tz
+
 
 # USER INPUTS
 #---------------------------------------------------------------------------------------------------
-INPUT_FILE = 'moves-export.json'
+INPUT_FILE = 'CareLink-Export-1451459738062.csv'
 OUTPUT_FILE = 'testoutput.txt'
 WRITE_ONLY_TRUNCATED = True   # set to false for debug output
-THRESHOLD_WALK_SECS = 300     # any walk with less seconds than this is discarded
-THRESHOLD_BIKE_SECS = 120     # set any threshold to 0 to include all segments
-THRESHOLD_RUN_SECS = 60
-STEPS_PER_MILE = 2252    # from: http://www.nscsd.org/webpages/rbrown/file_viewer.cfm?secFile=919
-ZONE_TO = tz.gettz('America/Los_Angeles')  # set to timezone that you live in
-    # timezone names: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+#THRESHOLD_WALK_SECS = 300     # any walk with less seconds than this is discarded
+#THRESHOLD_BIKE_SECS = 120     # set any threshold to 0 to include all segments
+#THRESHOLD_RUN_SECS = 60
+#STEPS_PER_MILE = 2252    # from: http://www.nscsd.org/webpages/rbrown/file_viewer.cfm?secFile=919
+#ZONE_TO = tz.gettz('America/Los_Angeles')  # set to timezone that you live in
+#    # timezone names: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 
 # CONSTANTS
 #---------------------------------------------------------------------------------------------------
-METERS_PER_MILE = 1609.34
-ZONE_FROM = tz.gettz('UTC')     # to convert timzezones from UTC to Pacific
+#METERS_PER_MILE = 1609.34
+#ZONE_FROM = tz.gettz('UTC')     # to convert timzezones from UTC to Pacific
+
+
+with open(INPUT_FILE,newline='') as file:
+#    input_lists = csv.reader(csvfile, delimiter=',', quotechar='|')
+    for line in file:
+#        print (', '.join(row))
+        print(line)
+        split_by_quotations = line.split('"')
+        print (split_by_quotations)
+        if len(split_by_quotations) == 3:
+            first = temp[0].split(',')
+            second = temp[1]
+            third = temp[2].split(',')
+            
+            print('1: ',first)
+            print('2: ',second)
+            print('3: ',third)
+            
+
+
+'''
 
 # FUNCTIONS
 #---------------------------------------------------------------------------------------------------
@@ -450,3 +472,5 @@ for each in list_runs:
         outFile.write('\n') 
 
 outFile.close()
+
+'''
