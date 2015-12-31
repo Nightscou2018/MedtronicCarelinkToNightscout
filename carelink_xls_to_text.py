@@ -85,41 +85,37 @@ with open(INPUT_FILE,newline='') as file:
 #        print(line)
         input_list.append(line)
         
+    print('length of initial list = ',len(input_list))
+    
     # remove the first 11 lines, as they are unused header data
     del input_list[0:11]
     
-#    input_list_group_1 = []
-#    input_list_group_2 = []
-#    input_list_group_3 = []
+    print('length of trimmed list = ',len(input_list))
+    
+#    group_1 = []
+#    group_2 = []
+#    group_3 = []
     input_list_parsed = []
     
     for line in input_list:
         split_by_quotations = line.split('"')
-#        print (split_by_quotations)
+        
         if len(split_by_quotations) == 3:
-#            input_list_group_1.append = split_by_quotations[0].split(',')
-#            input_list_group_2.append = split_by_quotations[1]
-#            input_list_group_3.append = split_by_quotations[2].split(',')
-            input_list_group_1 = split_by_quotations[0].split(',')
-            input_list_group_2 = split_by_quotations[1]
-            input_list_group_3 = split_by_quotations[2].split(',')
+            group_1 = split_by_quotations[0].split(',')
+            group_2 = split_by_quotations[1]
+            group_4 = split_by_quotations[2].split(',')
             
-            temp_list = []
-            temp_list.append(input_list_group_1)
-            temp_list.append(input_list_group_2)
-            temp_list.append(input_list_group_3)
-            
-            print(temp_list)
+            group_3 = group_1           
+            group_3.append(group_2)
+            temp_list = group_3 + group_4           
             
             input_list_parsed.append(temp_list)
+
+        else:
+            print(split_by_quotations)
             
-#            print('1: ',input_list_group_1)
-#            print('2: ',input_list_group_2)
-#            print('3: ',input_list_group_3)
-            
-            print(len(input_list_group_1),'\t',
-                  len(input_list_group_2),'\t',
-                  len(input_list_group_3))
+    print('length of final list = ',len(input_list_parsed))  
+
             
 '''
 
