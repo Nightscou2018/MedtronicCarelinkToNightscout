@@ -77,25 +77,50 @@ WRITE_ONLY_TRUNCATED = True   # set to false for debug output
 #METERS_PER_MILE = 1609.34
 #ZONE_FROM = tz.gettz('UTC')     # to convert timzezones from UTC to Pacific
 
+input_list = []
 
 with open(INPUT_FILE,newline='') as file:
 #    input_lists = csv.reader(csvfile, delimiter=',', quotechar='|')
     for line in file:
-#        print (', '.join(row))
-        print(line)
+#        print(line)
+        input_list.append(line)
+        
+    # remove the first 11 lines, as they are unused header data
+    del input_list[0:11]
+    
+#    input_list_group_1 = []
+#    input_list_group_2 = []
+#    input_list_group_3 = []
+    input_list_parsed = []
+    
+    for line in input_list:
         split_by_quotations = line.split('"')
-        print (split_by_quotations)
+#        print (split_by_quotations)
         if len(split_by_quotations) == 3:
-            first = temp[0].split(',')
-            second = temp[1]
-            third = temp[2].split(',')
+#            input_list_group_1.append = split_by_quotations[0].split(',')
+#            input_list_group_2.append = split_by_quotations[1]
+#            input_list_group_3.append = split_by_quotations[2].split(',')
+            input_list_group_1 = split_by_quotations[0].split(',')
+            input_list_group_2 = split_by_quotations[1]
+            input_list_group_3 = split_by_quotations[2].split(',')
             
-            print('1: ',first)
-            print('2: ',second)
-            print('3: ',third)
+            temp_list = []
+            temp_list.append(input_list_group_1)
+            temp_list.append(input_list_group_2)
+            temp_list.append(input_list_group_3)
             
-
-
+            print(temp_list)
+            
+            input_list_parsed.append(temp_list)
+            
+#            print('1: ',input_list_group_1)
+#            print('2: ',input_list_group_2)
+#            print('3: ',input_list_group_3)
+            
+            print(len(input_list_group_1),'\t',
+                  len(input_list_group_2),'\t',
+                  len(input_list_group_3))
+            
 '''
 
 # FUNCTIONS
