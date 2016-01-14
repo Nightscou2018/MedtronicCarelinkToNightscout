@@ -55,9 +55,7 @@ list_of_days = [date,walking steps, cycle miles, run miles, [walk segments],[bik
 
 # IMPORTS
 #---------------------------------------------------------------------------------------------------
-#import csv
 import datetime
-#from dateutil import tz
 
 
 # USER INPUTS
@@ -65,36 +63,24 @@ import datetime
 INPUT_FILE = 'CareLink-Export-1451459738062.csv'
 OUTPUT_FILE = 'testoutput.txt'
 WRITE_ONLY_TRUNCATED = True   # set to false for debug output
-#THRESHOLD_WALK_SECS = 300     # any walk with less seconds than this is discarded
-#THRESHOLD_BIKE_SECS = 120     # set any threshold to 0 to include all segments
-#THRESHOLD_RUN_SECS = 60
-#STEPS_PER_MILE = 2252    # from: http://www.nscsd.org/webpages/rbrown/file_viewer.cfm?secFile=919
-#ZONE_TO = tz.gettz('America/Los_Angeles')  # set to timezone that you live in
-#    # timezone names: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 
 # CONSTANTS
 #---------------------------------------------------------------------------------------------------
-#METERS_PER_MILE = 1609.34
-#ZONE_FROM = tz.gettz('UTC')     # to convert timzezones from UTC to Pacific
 
 input_list = []
 
 with open(INPUT_FILE,newline='') as file:
-#    input_lists = csv.reader(csvfile, delimiter=',', quotechar='|')
     for line in file:
 #        print(line)
         input_list.append(line)
         
-    print('length of initial list = ',len(input_list))
+#    print('length of initial list = ',len(input_list))
     
     # remove the first 11 lines, as they are unused header data
     del input_list[0:11]
     
-    print('length of trimmed list = ',len(input_list))
+#    print('length of trimmed list = ',len(input_list))
     
-#    group_1 = []
-#    group_2 = []
-#    group_3 = []
     input_list_parsed = []
     
     for line in input_list:
@@ -112,12 +98,141 @@ with open(INPUT_FILE,newline='') as file:
             input_list_parsed.append(temp_list)
 
         else:
-            print(split_by_quotations)
+#            print(split_by_quotations)
+            pass
             
-    print('length of final list = ',len(input_list_parsed))  
+#    print('length of final list = ',len(input_list_parsed))  
+    
+    '''
+    Well, shit.  This shows that I'm losing 91 records that don't contain a
+    quotation mark, thereby failing the len(split...) == 3 test.
+    
+    Probably need to parse lines using something else.
+    '''
 
+    input_list_parsed_by_strings = []
+    search_strings_list = ['BolusNormal',
+                           'BolusWizardBolusEstimate',
+                           'Rewind',
+                           'BGCapturedOnPump',
+                           'BolusSquare',
+                           'ChangeTempBasalPercent'
+                           ]
+    
+    for line in input_list:
+        for i in range (0, len(search_strings_list)):
+            if search_strings_list[i] in line:
+                input_list_parsed_by_strings.append(line)
+
+    print('length of list parsed by strings =',len(input_list_parsed_by_strings))
+    # for line in input_list_parsed_by_strings:
+    #     print (line)
+    
+    # create list of lists, length = to the number of strings being searched for
+    list_of_pertinent_lists = [[] for x in range(len(search_strings_list))]
+    j = 0
+
+    for i in range (0, len(search_strings_list)):
+        list_of_pertinent_lists[j] = []
+
+        for line in input_list:
+            if search_strings_list[i] in line:
+                list_of_pertinent_lists[j].append(line)
+        j = j + 1
+
+    # Parse each of the lists contained in list_of_pertinent_lists based on that data type's format
+    # [0] BolusNormal
+    counter = 0
+    for line in list_of_pertinent_lists[0]:
+        parsed_line = line.split(',')
+        if 'Normal' in parsed_line:
+            timestamp = parsed_line[3]            
+            temp = parsed_line.index('Normal')
+            bolus_delivered = parsed_line[temp+2]
+            # print(timestamp,' ',bolus_delivered)
+            '''
+            TODO: save the parsed timedate and bolus info to write out to Text here
+            '''
+        else:
+            # print(parsed_line)
+            counter = counter + 1
+    print('unrecorded BolusNormal lines =',counter)
+
+    # [1] BolusWizardBolusEstimate
+    # BG_INPUT=0, BG_UNITS=mg dl, CARB_INPUT=35, CARB_UNITS=grams, CARB_RATIO=12, INSULIN_SENSITIVITY=50, BG_TARGET_LOW=80, BG_TARGET_HIGH=120, BOLUS_ESTIMATE=2.9, CORRECTION_ESTIMATE=0, FOOD_ESTIMATE=2.9, UNABSORBED_INSULIN_TOTAL=0, UNABSORBED_INSULIN_COUNT=2, ACTION_REQUESTOR=paradigm link or b key
+    counter = 0
+    for line in list_of_pertinent_lists[0]:
+        parsed_line = line.split(',')
+
+        timestamp = parsed_line[3] 
+
+        #TODO: the code below is tripping up, run it and look at error
+        temp = [x for x in parsed_line if 'BG_INPUT=' in x]
+        print(temp)
+        temp = temp[0].split('=')
+        bg_input = temp[1]
+
+        temp = [x for x in parsed_line if 'CARB_INPUT=' in x]
+        print(temp)
+        temp = temp[0].split('=')
+        carb_input = temp[1]
+
+
+        temp = [x for x in parsed_line if 'BOLUS_ESTIMATE=' in x]
+        print(temp)
+        temp = temp[0].split('=')
+        bolus_estimate = temp[1]
+
+        print(timestamp,bg_input,carb_input,bolus_estimate)
+        '''
+        TODO: save the parsed timedate and bolus info to write out to Text here
+        '''
+
+        # print(parsed_line)
+        # counter = counter + 1
+    print('unrecorded BolusWizardBolusEstimate lines =',counter)
+
+'''
+TODO: below is the set of functions above, but with try/excepts where they should be
+    # [1] BolusWizardBolusEstimate
+    # BG_INPUT=0, BG_UNITS=mg dl, CARB_INPUT=35, CARB_UNITS=grams, CARB_RATIO=12, INSULIN_SENSITIVITY=50, BG_TARGET_LOW=80, BG_TARGET_HIGH=120, BOLUS_ESTIMATE=2.9, CORRECTION_ESTIMATE=0, FOOD_ESTIMATE=2.9, UNABSORBED_INSULIN_TOTAL=0, UNABSORBED_INSULIN_COUNT=2, ACTION_REQUESTOR=paradigm link or b key
+    counter = 0
+    for line in list_of_pertinent_lists[0]:
+        parsed_line = line.split(',')
+        try:
+            timestamp = parsed_line[3] 
+            try:
+                temp = [x for x in parsed_line if 'BG_INPUT=' in x]
+                temp = temp.split('=')
+                bg_input = temp[1]
+            except:
+                pass
+            try:
+                temp = [x for x in parsed_line if 'CARB_INPUT=' in x]
+                temp = temp.split('=')
+                carb_input = temp[1]
+            except:
+                pass
+            try:
+                temp = [x for x in parsed_line if 'BOLUS_ESTIMATE=' in x]
+                temp = temp.split('=')
+                bolus_estimate = temp[1]
+            except:
+                pass
+            print(timestamp,bg_input,carb_input,bolus_estimate)
+
+            #TODO: save the parsed timedate and bolus info to write out to Text here
+
+        except:
+            # print(parsed_line)
+            counter = counter + 1
+    print('unrecorded BolusWizardBolusEstimate lines =',counter)
+'''
+
+    
             
 '''
+TODO: everything below is leftover code, delete most/all of it
 
 # FUNCTIONS
 #---------------------------------------------------------------------------------------------------
