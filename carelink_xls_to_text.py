@@ -80,35 +80,6 @@ with open(INPUT_FILE,newline='') as file:
     del input_list[0:11]
 #    print('length of trimmed list = ',len(input_list))
     
-    '''
-    input_list_parsed = []
-    
-    for line in input_list:
-        split_by_quotations = line.split('"')
-        
-        if len(split_by_quotations) == 3:
-            group_1 = split_by_quotations[0].split(',')
-            group_2 = split_by_quotations[1]
-            group_4 = split_by_quotations[2].split(',')
-            
-            group_3 = group_1           
-            group_3.append(group_2)
-            temp_list = group_3 + group_4           
-            
-            input_list_parsed.append(temp_list)
-
-        else:
-#            print(split_by_quotations)
-            pass
-            
-#    print('length of final list = ',len(input_list_parsed))  
-    
-
-    Well, shit.  This shows that I'm losing 91 records that don't contain a
-    quotation mark, thereby failing the len(split...) == 3 test.
-        Probably need to parse lines using something else.
-    '''
-
     input_list_parsed_by_strings = []
     search_strings_list = ['BolusNormal',
                            'BolusWizardBolusEstimate',
