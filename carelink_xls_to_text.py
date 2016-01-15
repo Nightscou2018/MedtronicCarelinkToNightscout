@@ -78,9 +78,9 @@ with open(INPUT_FILE,newline='') as file:
     
     # remove the first 11 lines, as they are unused header data
     del input_list[0:11]
-    
 #    print('length of trimmed list = ',len(input_list))
     
+    '''
     input_list_parsed = []
     
     for line in input_list:
@@ -103,11 +103,10 @@ with open(INPUT_FILE,newline='') as file:
             
 #    print('length of final list = ',len(input_list_parsed))  
     
-    '''
+
     Well, shit.  This shows that I'm losing 91 records that don't contain a
     quotation mark, thereby failing the len(split...) == 3 test.
-    
-    Probably need to parse lines using something else.
+        Probably need to parse lines using something else.
     '''
 
     input_list_parsed_by_strings = []
@@ -141,7 +140,7 @@ with open(INPUT_FILE,newline='') as file:
         j = j + 1
 
     # Parse each of the lists contained in list_of_pertinent_lists based on that data type's format
-    # [0] BolusNormal
+    # --------------- [0] BolusNormal
     counter = 0
     for line in list_of_pertinent_lists[0]:
         parsed_line = line.split(',')
@@ -156,80 +155,59 @@ with open(INPUT_FILE,newline='') as file:
         else:
             # print(parsed_line)
             counter = counter + 1
+    print('----------------------------------------------------------------')
     print('unrecorded BolusNormal lines =',counter)
+    print('----------------------------------------------------------------') 
 
-    # [1] BolusWizardBolusEstimate
+    # --------------- [1] BolusWizardBolusEstimate
     # BG_INPUT=0, BG_UNITS=mg dl, CARB_INPUT=35, CARB_UNITS=grams, CARB_RATIO=12, INSULIN_SENSITIVITY=50, BG_TARGET_LOW=80, BG_TARGET_HIGH=120, BOLUS_ESTIMATE=2.9, CORRECTION_ESTIMATE=0, FOOD_ESTIMATE=2.9, UNABSORBED_INSULIN_TOTAL=0, UNABSORBED_INSULIN_COUNT=2, ACTION_REQUESTOR=paradigm link or b key
     counter = 0
-    for line in list_of_pertinent_lists[0]:
+    for line in list_of_pertinent_lists[1]:
         parsed_line = line.split(',')
-
         timestamp = parsed_line[3] 
 
-        #TODO: the code below is tripping up, run it and look at error
         temp = [x for x in parsed_line if 'BG_INPUT=' in x]
-        print(temp)
         temp = temp[0].split('=')
         bg_input = temp[1]
 
         temp = [x for x in parsed_line if 'CARB_INPUT=' in x]
-        print(temp)
         temp = temp[0].split('=')
         carb_input = temp[1]
 
-
         temp = [x for x in parsed_line if 'BOLUS_ESTIMATE=' in x]
-        print(temp)
         temp = temp[0].split('=')
         bolus_estimate = temp[1]
 
         print(timestamp,bg_input,carb_input,bolus_estimate)
         '''
-        TODO: save the parsed timedate and bolus info to write out to Text here
+        TODO: save the parsed timedate and info to write out to Text here
         '''
-
         # print(parsed_line)
-        # counter = counter + 1
+        counter = counter + 1
+    print('----------------------------------------------------------------')    
     print('unrecorded BolusWizardBolusEstimate lines =',counter)
+    print('----------------------------------------------------------------') 
 
-'''
-TODO: below is the set of functions above, but with try/excepts where they should be
-    # [1] BolusWizardBolusEstimate
-    # BG_INPUT=0, BG_UNITS=mg dl, CARB_INPUT=35, CARB_UNITS=grams, CARB_RATIO=12, INSULIN_SENSITIVITY=50, BG_TARGET_LOW=80, BG_TARGET_HIGH=120, BOLUS_ESTIMATE=2.9, CORRECTION_ESTIMATE=0, FOOD_ESTIMATE=2.9, UNABSORBED_INSULIN_TOTAL=0, UNABSORBED_INSULIN_COUNT=2, ACTION_REQUESTOR=paradigm link or b key
+    # --------------- [2] Rewind
     counter = 0
-    for line in list_of_pertinent_lists[0]:
+    for line in list_of_pertinent_lists[2]:
         parsed_line = line.split(',')
-        try:
-            timestamp = parsed_line[3] 
-            try:
-                temp = [x for x in parsed_line if 'BG_INPUT=' in x]
-                temp = temp.split('=')
-                bg_input = temp[1]
-            except:
-                pass
-            try:
-                temp = [x for x in parsed_line if 'CARB_INPUT=' in x]
-                temp = temp.split('=')
-                carb_input = temp[1]
-            except:
-                pass
-            try:
-                temp = [x for x in parsed_line if 'BOLUS_ESTIMATE=' in x]
-                temp = temp.split('=')
-                bolus_estimate = temp[1]
-            except:
-                pass
-            print(timestamp,bg_input,carb_input,bolus_estimate)
+        timestamp = parsed_line[3] 
 
-            #TODO: save the parsed timedate and bolus info to write out to Text here
+        print(timestamp)
+        '''
+        TODO: save the parsed timedate and info to write out to Text here
+        '''
+        # print(parsed_line)
+        counter = counter + 1
+    print('----------------------------------------------------------------')    
+    print('unrecorded Rewind lines =',counter)
+    print('----------------------------------------------------------------') 
 
-        except:
-            # print(parsed_line)
-            counter = counter + 1
-    print('unrecorded BolusWizardBolusEstimate lines =',counter)
-'''
 
-    
+
+
+   
             
 '''
 TODO: everything below is leftover code, delete most/all of it
