@@ -56,6 +56,14 @@ list_of_days = [date,walking steps, cycle miles, run miles, [walk segments],[bik
 # IMPORTS
 #---------------------------------------------------------------------------------------------------
 import datetime
+from dateutil import tz
+
+
+# CONSTANTS
+#---------------------------------------------------------------------------------------------------
+ZONE_FROM = tz.gettz('America/Los_Angeles')  # set to timezone that you live in
+ZONE_TO = tz.gettz('UTC')     # to convert timzezones from UTC to Pacific
+    # timezone names: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 
 
 # USER INPUTS
@@ -64,22 +72,29 @@ INPUT_FILE = 'CareLink-Export-1451459738062.csv'
 OUTPUT_FILE = 'testoutput.txt'
 WRITE_ONLY_TRUNCATED = True   # set to false for debug output
 
-# CONSTANTS
+# FUNCTIONS
 #---------------------------------------------------------------------------------------------------
+def Clean_Header_Lines(input_list):
+    # remove the first 11 lines, as they are unused header data
+    del input_list[0:11]
+    return input_list
 
+def Convert_to_UTC(input_timedate):
+    time_local = datetime.datetime.strptime(input_timedate,'%m/%d/%Y %H:%M:%S')            
+    time_utc = time_local.replace(tzinfo=ZONE_FROM)
+    time_utc = time_utc.astimezone(ZONE_TO)
+    return time_utc
+
+# MAIN
+#---------------------------------------------------------------------------------------------------
 input_list = []
 
 with open(INPUT_FILE,newline='') as file:
     for line in file:
-#        print(line)
-        input_list.append(line)
-        
-#    print('length of initial list = ',len(input_list))
-    
-    # remove the first 11 lines, as they are unused header data
-    del input_list[0:11]
-#    print('length of trimmed list = ',len(input_list))
-    
+        input_list.append(line) 
+
+    input_list = Clean_Header_Lines(input_list)
+
     input_list_parsed_by_strings = []
     search_strings_list = ['BolusNormal',
                            'BolusWizardBolusEstimate',
@@ -115,17 +130,21 @@ with open(INPUT_FILE,newline='') as file:
     counter = 0
     for line in list_of_pertinent_lists[0]:
         parsed_line = line.split(',')
-        if 'Normal' in parsed_line:
-            timestamp = parsed_line[3]            
-            temp = parsed_line.index('Normal')
-            bolus_delivered = parsed_line[temp+2]
-            # print(timestamp,' ',bolus_delivered)
+        timestamp = parsed_line[3]
+        timestamp_utc = Convert_to_UTC(timestamp)   
+        try:
+            temp = [x for x in parsed_line if 'AMOUNT=' in x]
+            temp = temp[0].split('=')
+            bolus_delivered = temp[1]
+            print(timestamp,' ',bolus_delivered)
+            print(timestamp_utc,' ',bolus_delivered)
             '''
             TODO: save the parsed timedate and bolus info to write out to Text here
             '''
-        else:
-            # print(parsed_line)
+        except:
+            print(parsed_line)
             counter = counter + 1
+
     print('----------------------------------------------------------------')
     print('unrecorded BolusNormal lines =',counter)
     print('----------------------------------------------------------------') 
@@ -137,24 +156,26 @@ with open(INPUT_FILE,newline='') as file:
         parsed_line = line.split(',')
         timestamp = parsed_line[3] 
 
-        temp = [x for x in parsed_line if 'BG_INPUT=' in x]
-        temp = temp[0].split('=')
-        bg_input = temp[1]
+        try:
+            temp = [x for x in parsed_line if 'BG_INPUT=' in x]
+            temp = temp[0].split('=')
+            bg_input = temp[1]
 
-        temp = [x for x in parsed_line if 'CARB_INPUT=' in x]
-        temp = temp[0].split('=')
-        carb_input = temp[1]
+            temp = [x for x in parsed_line if 'CARB_INPUT=' in x]
+            temp = temp[0].split('=')
+            carb_input = temp[1]
 
-        temp = [x for x in parsed_line if 'BOLUS_ESTIMATE=' in x]
-        temp = temp[0].split('=')
-        bolus_estimate = temp[1]
+            temp = [x for x in parsed_line if 'BOLUS_ESTIMATE=' in x]
+            temp = temp[0].split('=')
+            bolus_estimate = temp[1]
 
-        print(timestamp,bg_input,carb_input,bolus_estimate)
-        '''
-        TODO: save the parsed timedate and info to write out to Text here
-        '''
-        # print(parsed_line)
-        counter = counter + 1
+            print(timestamp,bg_input,carb_input,bolus_estimate)
+            '''
+            TODO: save the parsed timedate and info to write out to Text here
+            '''
+        except:
+            # print(parsed_line)
+            counter = counter + 1
     print('----------------------------------------------------------------')    
     print('unrecorded BolusWizardBolusEstimate lines =',counter)
     print('----------------------------------------------------------------') 
@@ -169,53 +190,93 @@ with open(INPUT_FILE,newline='') as file:
         '''
         TODO: save the parsed timedate and info to write out to Text here
         '''
-        # print(parsed_line)
-        counter = counter + 1
     print('----------------------------------------------------------------')    
     print('unrecorded Rewind lines =',counter)
     print('----------------------------------------------------------------') 
 
+    # --------------- [3] BGCapturedOnPump
+    counter = 0
+    for line in list_of_pertinent_lists[3]:
+        parsed_line = line.split(',')
+        timestamp = parsed_line[3] 
 
+        try:
+            temp = [x for x in parsed_line if 'AMOUNT=' in x]
+            temp = temp[0].split('=')
+            bg_captured_on_pump = temp[1]
 
+            print(timestamp,bg_captured_on_pump)
+            '''
+            TODO: save the parsed timedate and info to write out to Text here
+            '''
+        except:
+            # print(parsed_line)
+            counter = counter + 1
+    print('----------------------------------------------------------------')    
+    print('unrecorded BGCapturedOnPump lines =',counter)
+    print('----------------------------------------------------------------') 
 
-   
+    # --------------- [4] BolusSquare
+    counter = 0
+    for line in list_of_pertinent_lists[4]:
+        parsed_line = line.split(',')
+        timestamp = parsed_line[3]
+
+        if ('Dual/Square' in parsed_line) or ('Square' in parsed_line):          
+            try:
+                temp = parsed_line.index('Square')
+            except:
+                pass
+            try:
+                temp = parsed_line.index('Dual/Square')
+            except:
+                pass
+
+            bolus_delivered = parsed_line[temp+2]
+            bolus_duration = parsed_line[temp+3]
+            # print(timestamp,' ',bolus_delivered)
+            '''
+            TODO: save the parsed timedate and bolus info to write out to Text here
+            '''
+        else:
+            print(parsed_line)
+            counter = counter + 1 
+        print(timestamp,bolus_delivered,bolus_duration)           
+    print('----------------------------------------------------------------')    
+    print('unrecorded BolusSquare lines =',counter)
+    print('----------------------------------------------------------------') 
+
+        # --------------- [5] ChangeTempBasalPercent
+    counter = 0
+    for line in list_of_pertinent_lists[5]:
+        parsed_line = line.split(',')
+        timestamp = parsed_line[3]
+
+        try:
+            temp = [x for x in parsed_line if 'PERCENT_OF_RATE=' in x]
+            temp = temp[0].split('=')
+            basal_percent = temp[1]
+
+            temp = [x for x in parsed_line if 'DURATION=' in x]
+            temp = temp[0].split('=')
+            duration = temp[1]
+            duration_minutes = int((int(duration))/60000)
+            '''
+            TODO: save the parsed timedate and bolus info to write out to Text here
+            '''
+        except:
+            print(parsed_line)
+            counter = counter + 1 
+        print(timestamp,basal_percent,duration_minutes)           
+    print('----------------------------------------------------------------')    
+    print('unrecorded ChangeTempBasalPercent lines =',counter)
+    print('----------------------------------------------------------------') 
             
 '''
 TODO: everything below is leftover code, delete most/all of it
 
 # FUNCTIONS
 #---------------------------------------------------------------------------------------------------
-def open_data_file (INPUT_FILE_name):
-    with open(INPUT_FILE_name) as data_file:    
-        data = json.load(data_file)
-        return data
-
-def process_data_file (input_data):
-    list_of_days = []
-    list_walks = []
-    list_bikes = []
-    list_runs = []
-    segments_per_day_walk = []
-    segments_per_day_bike = []
-    segments_per_day_run = []
-
-    print('Length of data file =',len(data))
-    counter = 1
-
-    for i in range(0,len(data)-1):
-        singleday = data[i]
-        print('data :',counter,'of ',len(data))
-        days_list_walk = []
-        days_list_bike = []  
-        days_list_run = []
-        steps = 0
-        count_steps = 0
-        distance = 0
-        count_bike = 0
-        count_run = 0
-        segments_walk = 0
-        segments_bike = 0
-        segments_run = 0
         
     #    # Each day has "date" and "segements".
         try:        
