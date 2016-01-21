@@ -2,10 +2,10 @@
 TO-DO:
 - 
 - 
-- Fix all comments
+- completely rewrite comments
 '''
 '''
-Copyright (c) 2015 Michael Stebbins
+Copyright (c) 2016 Michael Stebbins
 Based on code from KainokiKaede (https://gist.github.com/KainokiKaede/7251872)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -75,7 +75,7 @@ search_strings_list = ['BolusNormal',
 
 # USER INPUTS
 #---------------------------------------------------------------------------------------------------
-INPUT_FILE = 'CareLink-Export-1451459738062.csv'
+INPUT_FILE = 'CareLink-Export-1451459738062_short.csv'
 OUTPUT_FILE = 'testoutput.txt'
 WRITE_ONLY_TRUNCATED = True   # set to false for debug output
 

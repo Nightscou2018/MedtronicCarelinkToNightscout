@@ -1,5 +1,11 @@
 '''
-Copyright (c) 2015 Michael Stebbins
+TO-DO:
+- 
+- 
+- Completely rewrite comments 
+'''
+'''
+Copyright (c) 2016 Michael Stebbins
 Based on code from KainokiKaede (https://gist.github.com/KainokiKaede/7251872)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -36,17 +42,126 @@ from pymongo import MongoClient
 import time
 import datetime
 
+
 # USER INPUTS
 #---------------------------------------------------------------------------------------------------
 INPUT_FILENAME = 'testoutput.txt'
 
+
+# FUNCTIONS
+#---------------------------------------------------------------------------------------------------
+def convert_time_to_utc(input_string):
+    # remove the utc offset string from the main string
+    create_time_base = input_string[0:19]
+    time_utc = datetime.datetime.strptime(create_time_base,'%Y-%m-%d %H:%M:%S')
+    # change the utc datetime to the appropriate string
+    datetime_str = datetime.datetime.strftime(time_utc,'%Y-%m-%dT%H:%M:%S.000Z')
+    return datetime_str
+
+
+def process_bolusnormal(input_line):
+    parsed_line = input_line.split(',')
+    datetime_str = convert_time_to_utc(parsed_line[1])
+    bolus = parsed_line[2]
+    post = {
+            "eventType":"Meal Bolus",
+            "enteredBy":"computer",
+            "insulin": bolus,
+            "units": "mg/dL",
+            "created_at":datetime_str
+            }    
+    print(post)
+    return post
+
+
+def process_boluswizardbolusestimate(input_line):
+    parsed_line = input_line.split(',')
+    datetime_str = convert_time_to_utc(parsed_line[1])
+    bg    = int(parsed_line[2])
+    carbs = parsed_line[3]
+    bolus = parsed_line[4]
+    
+    temp_dict = {}
+
+    if carbs is not '0':
+        temp_dict["carbs"] = carbs
+
+    if bg is not 0:
+        temp_dict["glucose"] = bg
+        temp_dict["glucoseType"] = "Finger"
+
+    if bolus is not '0':
+        temp_dict["insulin"] = bolus
+        temp_dict["units"] = "mg/dl"
+  
+    temp_dict["eventType"] = "Meal Bolus"
+    temp_dict["enteredBy"] = "computer"
+    temp_dict["created_at"] = datetime_str
+
+    post = temp_dict
+    print(post)
+    return post
+
+# TODO: flesh out these functions
+def process_rewind(input_line):
+    parsed_line = input_line.split(',')
+    datetime_str = convert_time_to_utc(parsed_line[1])
+    post = {
+            "eventType":"Site Change",
+            "enteredBy":"computer",
+            "created_at":datetime_str
+            }    
+    print(post)
+    return post
+
+
+def process_bgcapturedonpump(input_line):
+    parsed_line = input_line.split(',')
+    datetime_str = convert_time_to_utc(parsed_line[1])
+    bg = int(parsed_line[2])
+   
+    post = {
+            "eventType": "BG Check",
+            "enteredBy":"computer",
+            "glucose": bg,
+            "glucoseType": "Finger",
+            "units": "mg/dL",
+            "created_at":datetime_str
+            }    
+    print(post)
+    return post
+
+
+def process_changetempbasalpercent(input_line):
+    parsed_line = input_line.split(',')
+    datetime_str = convert_time_to_utc(parsed_line[1])
+    temp_basal_percent = int(parsed_line[2])
+    temp_basal_duration = int(parsed_line[3])
+    
+    # pump reports absolute percent, nightscout wants delta percent
+    # i.e., 150(%) temp basal on pump is entered as 50(%) in nightscout
+    temp_basal_percent = temp_basal_percent - 100
+    if temp_basal_percent < -100:
+        print ('temp basal rate is impossible, must be wrong')
+    else:
+        post = {
+                "eventType": "Temp Basal",
+                "enteredBy":"computer",
+                "duration": temp_basal_duration,
+                "percent": temp_basal_percent,
+                "created_at":datetime_str
+                }    
+        print(post)
+        return post
+
+
 # MONGOLAB DATABASE LOG-IN INFO PULLED FROM CONFIG FILE (CREATE YOUR OWN LIKE IN EXAMPLE)
 with open('.config') as f:
     config = f.read().splitlines()
-#MONGO_URL = 'mongodb://DataIn:g8cr3Xyvg9h8@ds054298.mongolab.com:54298/mikestebbinsdb2'
-#DB_NAME = 'mikestebbinsdb2'
-MONGO_URL = config[0]
-DB_NAME = config[1]
+MONGO_URL = 'mongodb://DataIn:g8cr3Xyvg9h8@ds054298.mongolab.com:54298/mikestebbinsdb2'
+DB_NAME = 'mikestebbinsdb2'
+# MONGO_URL = config[0]
+# DB_NAME = config[1]
 
 #-----------------------------------------------------------------------------
 # MAIN FUNCTION
@@ -76,39 +191,30 @@ file = open(INPUT_FILENAME, 'r')
 counter = 0
 
 for line in file:
-    counter =  counter + 1
-    # strip beginning and ending square brackets from string-ized list
-    temp1 = line[1:-2]
-    # remove the single quotations, replace with nothing
-    temp2 = temp1.replace("'","")
-    # split the string into a list, separated by comma-space
-    temp3 = temp2.split(', ')
-    # grab time component of list 
-    create_time = temp3[5]
-    # remove the utc offset string from the main string
-    create_time_base = create_time[0:19]
-    # create a datetime object from the remaining string
-#    time_local = datetime.datetime.strptime(create_time_base,'%Y-%m-%d %H:%M:%S')
-    # wrote out UTC time in movesjson2mongo script, can eliminate all of this
-    # conversion nonsense here.  Mongolab DB uses UTC time.
-#    time_utc = time_local + datetime.timedelta(hours=8)
-    time_utc = datetime.datetime.strptime(create_time_base,'%Y-%m-%d %H:%M:%S')
-#    print(time_utc)
-    # change the utc datetime to the appropriate string
-    datetime_str = datetime.datetime.strftime(time_utc,'%Y-%m-%dT%H:%M:%S.000Z')
-    # round the duration time to the nearest minute    
-    duration = round(float(temp3[1]))
-    
-    post = {
-    "eventType":"Exercise",
-    "enteredBy":"computer",
-    "duration":duration,
-    "notes":temp3[0]+':'+str(duration),
-    "created_at":datetime_str
-    }    
-    print(post)
- 
-    post_id = COLLECTION_TREATMENTS.insert_one(post) 
+    if '***' in line:
+        print('skipping header line')
+    else:
+        if 'BolusNormal' in line:
+            post = process_bolusnormal(line)
+            counter = counter + 1
+
+        if 'BolusWizardBolusEstimate' in line:
+            post = process_boluswizardbolusestimate(line)
+            counter = counter + 1
+
+        if 'Rewind' in line:
+            post = process_rewind(line)
+            counter = counter + 1
+
+        if 'BGCapturedOnPump' in line:
+            post = process_bgcapturedonpump(line)
+            counter = counter + 1
+
+        if 'ChangeTempBasalPercent' in line:
+            post = process_changetempbasalpercent(line)
+            counter = counter + 1
+            
+        post_id = COLLECTION_TREATMENTS.insert_one(post) 
     
 time_now = time.time()
 print()
