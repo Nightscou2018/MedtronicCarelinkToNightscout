@@ -188,6 +188,21 @@ except Exception:
 print()         
 file = open(INPUT_FILENAME, 'r')
 
+#-------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------
+# First, parse each line by commas and convert times to UTC, append to list
+
+# Then, sort that list by time/date
+
+# Then, compare delta times line by line, if some are identical or nearly (bolusnormal
+# and boluswizardestimate, grab what is needed, toss the rest, make one line)
+
+
+
 counter = 0
 
 for line in file:
