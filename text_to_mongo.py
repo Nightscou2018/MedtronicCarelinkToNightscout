@@ -60,9 +60,8 @@ def convert_time_to_utc(input_string):
 
 
 def process_bolusnormal(input_line):
-    parsed_line = input_line.split(',')
-    datetime_str = convert_time_to_utc(parsed_line[1])
-    bolus = parsed_line[2]
+    datetime_str = convert_time_to_utc(input_line[1])
+    bolus = input_line[2]
     post = {
             "eventType":"Meal Bolus",
             "enteredBy":"computer",
@@ -70,16 +69,15 @@ def process_bolusnormal(input_line):
             "units": "mg/dL",
             "created_at":datetime_str
             }    
-    print(post)
+#    print(post)
     return post
 
 
 def process_boluswizardbolusestimate(input_line):
-    parsed_line = input_line.split(',')
-    datetime_str = convert_time_to_utc(parsed_line[1])
-    bg    = int(parsed_line[2])
-    carbs = parsed_line[3]
-    bolus = parsed_line[4]
+    datetime_str = convert_time_to_utc(input_line[1])
+    bg    = int(input_line[2])
+    carbs = input_line[3]
+    bolus = input_line[4]
     
     temp_dict = {}
 
@@ -99,26 +97,24 @@ def process_boluswizardbolusestimate(input_line):
     temp_dict["created_at"] = datetime_str
 
     post = temp_dict
-    print(post)
+#    print(post)
     return post
 
-# TODO: flesh out these functions
+
 def process_rewind(input_line):
-    parsed_line = input_line.split(',')
-    datetime_str = convert_time_to_utc(parsed_line[1])
+    datetime_str = convert_time_to_utc(input_line[1])
     post = {
             "eventType":"Site Change",
             "enteredBy":"computer",
             "created_at":datetime_str
             }    
-    print(post)
+#    print(post)
     return post
 
 
 def process_bgcapturedonpump(input_line):
-    parsed_line = input_line.split(',')
-    datetime_str = convert_time_to_utc(parsed_line[1])
-    bg = int(parsed_line[2])
+    datetime_str = convert_time_to_utc(input_line[1])
+    bg = int(input_line[2])
    
     post = {
             "eventType": "BG Check",
@@ -128,15 +124,14 @@ def process_bgcapturedonpump(input_line):
             "units": "mg/dL",
             "created_at":datetime_str
             }    
-    print(post)
+#    print(post)
     return post
 
 
 def process_changetempbasalpercent(input_line):
-    parsed_line = input_line.split(',')
-    datetime_str = convert_time_to_utc(parsed_line[1])
-    temp_basal_percent = int(parsed_line[2])
-    temp_basal_duration = int(parsed_line[3])
+    datetime_str = convert_time_to_utc(input_line[1])
+    temp_basal_percent = int(input_line[2])
+    temp_basal_duration = int(input_line[3])
     
     # pump reports absolute percent, nightscout wants delta percent
     # i.e., 150(%) temp basal on pump is entered as 50(%) in nightscout
@@ -151,42 +146,166 @@ def process_changetempbasalpercent(input_line):
                 "percent": temp_basal_percent,
                 "created_at":datetime_str
                 }    
-        print(post)
+#        print(post)
         return post
 
 
-# MONGOLAB DATABASE LOG-IN INFO PULLED FROM CONFIG FILE (CREATE YOUR OWN LIKE IN EXAMPLE)
-with open('.config') as f:
-    config = f.read().splitlines()
-MONGO_URL = 'mongodb://DataIn:g8cr3Xyvg9h8@ds054298.mongolab.com:54298/mikestebbinsdb2'
-DB_NAME = 'mikestebbinsdb2'
-# MONGO_URL = config[0]
-# DB_NAME = config[1]
+def obtain_mongo_login_info():
+    # MONGOLAB DATABASE LOG-IN INFO PULLED FROM CONFIG FILE (CREATE YOUR OWN LIKE IN EXAMPLE)
+    with open('.config') as f:
+        config = f.read().splitlines()
+#    MONGO_URL = 'mongodb://DataIn:g8cr3Xyvg9h8@ds054298.mongolab.com:54298/mikestebbinsdb2'
+#    DB_NAME = 'mikestebbinsdb2'
+    MONGO_URL = config[0]
+    DB_NAME = config[1]
+    return[MONGO_URL,DB_NAME]
+
+
+def connect_to_mongo(MONGO_URL,DB_NAME):
+    try:
+        DBclient = MongoClient(MONGO_URL)
+        DB = DBclient[DB_NAME]
+        COLLECTION_TREATMENTS = DB['treatments']
+        print("connected to MongoDB")
+    except:
+        print ('can not connect to DB make sure MongoDB is running')
+
+
+def count_mongo_entries():
+    try:
+        number_of_entries = COLLECTION_TREATMENTS.count()
+        print ('number of posts already existing = ',number_of_entries) 
+    except Exception:
+        print ('error: could not count posts for some reason or another')
+        number_of_entries = 0
+        print() 
+
+
+def read_lines_from_file():
+    file = open(INPUT_FILENAME, 'r')
+    master_list = []
+    counter = 0
+    for line in file:
+        if '***' in line:
+            print('skipping header line')
+        else:
+            master_list.append(line)
+            counter = counter + 1
+    return [counter,master_list]
+    
+
+def parse_lists(input_list_of_lists):
+    master_list_of_lists = []    
+    for line in input_list_of_lists:
+        master_list_of_lists.append(line.split(","))
+    return master_list_of_lists
+    
+
+def insert_datetime_field(input_list_of_lists):
+    master_list_of_lists = []
+    for line in input_list_of_lists:
+        timestamp = datetime.datetime.strptime(line[2],'%Y-%m-%d %H:%M:%S+00:00')        
+        line.insert(0,timestamp)        
+        master_list_of_lists.append(line)
+    return master_list_of_lists
+
+
+def time_between_events(sorted_lists):
+    list_of_posts = []    
+    print('length of sorted_lists =',len(sorted_lists))
+    for i in range (1,len(sorted_lists)):
+        print('i =',i)
+        prev = sorted_lists[i-1]
+        curr = sorted_lists[i]
+        A = 'BolusNormal'
+        B = 'BolusWizardBolusEstimate'
+
+        time_delta_seconds = (curr[0] - prev[0]).total_seconds()
+        if time_delta_seconds < 5:
+            print(time_delta_seconds)
+            print(curr)
+            print()
+            print(prev)
+            print()
+            if prev[2] == A and curr[2] == B:
+                case = 'X'
+            elif prev[2] == B and curr[2] == A:
+                case = 'Y'
+            else:
+                case = 'Z'
+        else:
+            case = 'Z'
+            
+        if case == 'X':
+            new_insulin = prev[1]['insulin']
+            curr[1]['insulin'] = new_insulin
+            post = curr[1]
+        if case == 'Y':
+            new_insulin = curr[1]['insulin']
+            prev[1]['insulin'] = new_insulin                
+            post = prev[1]
+        if case == 'Z':
+            post =  prev[1]
+        
+        list_of_posts.append(post)
+    return(list_of_posts)
+#TODO this isn't working.  Doesn't get rid of lines that are duplicate.  Also,
+# very ugly code.
+                
+            
+# If the two are less than 5.0 seconds apart, and one is BolusNormal and the 
+# other is BolusWizardBolusEstimate
+# Look at insulin in both of them.  If insulin in BolusNormal is different
+# then in BolusWizardBolusEstimate, use BolusNormal insulin.
+# write out the line if it was updated or if there wasn't a match
+            
+
+def decode_parsed_lists(parsed_lists):
+    master_list = []    
+    for line in parsed_lists:
+        if 'BolusNormal' in line:
+            post = process_bolusnormal(line)
+        if 'BolusWizardBolusEstimate' in line:
+            post = process_boluswizardbolusestimate(line)
+        if 'Rewind' in line:
+            post = process_rewind(line)
+        if 'BGCapturedOnPump' in line:
+            post = process_bgcapturedonpump(line)
+        if 'ChangeTempBasalPercent' in line:
+            post = process_changetempbasalpercent(line)
+        line.insert(0,post)
+        master_list.append(line)
+    return master_list
+
 
 #-----------------------------------------------------------------------------
 # MAIN FUNCTION
 #-----------------------------------------------------------------------------
 print('----------------------------------------------------------------------')
+
 time_then = time.time()
 
-try:
-    DBclient = MongoClient(MONGO_URL)
-    DB = DBclient[DB_NAME]
-    COLLECTION_TREATMENTS = DB['treatments']
-    print("connected to MongoDB")
-except:
-    print ('can not connect to DB make sure MongoDB is running')
+MONGO_URL,DB_NAME = obtain_mongo_login_info()
 
-time.sleep(0.1)
-   
-try:
-    number_of_entries = COLLECTION_TREATMENTS.count()
-    print ('number of posts already existing = ',number_of_entries) 
-except Exception:
-    print ('error: could not count posts for some reason or another')
-    number_of_entries = 0
-print()         
-file = open(INPUT_FILENAME, 'r')
+connect_to_mongo(MONGO_URL,DB_NAME)
+
+count_mongo_entries()
+
+counter,master_list = read_lines_from_file()
+print('total lines in file =',counter)
+
+parsed_lists = parse_lists(master_list)
+
+decoded_lists = decode_parsed_lists(parsed_lists)
+#now, each entry is [{post dictionary},parsed list from text]
+
+datetime_sortable_lists = insert_datetime_field(parsed_lists)
+#now, each entry is [datetime object,{post dict},parsed list from text]
+
+sorted_lists = sorted(datetime_sortable_lists, key=lambda x: x[0])
+
+list_of_posts = time_between_events(sorted_lists)
+
 
 #-------------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------------
@@ -195,41 +314,14 @@ file = open(INPUT_FILENAME, 'r')
 #-------------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------------
 # First, parse each line by commas and convert times to UTC, append to list
-
 # Then, sort that list by time/date
-
 # Then, compare delta times line by line, if some are identical or nearly (bolusnormal
-# and boluswizardestimate, grab what is needed, toss the rest, make one line)
+# and boluswizardestimate, grab what is needed, toss the rest, make one line
 
+'''
 
-
-counter = 0
-
-for line in file:
-    if '***' in line:
-        print('skipping header line')
-    else:
-        if 'BolusNormal' in line:
-            post = process_bolusnormal(line)
-            counter = counter + 1
-
-        if 'BolusWizardBolusEstimate' in line:
-            post = process_boluswizardbolusestimate(line)
-            counter = counter + 1
-
-        if 'Rewind' in line:
-            post = process_rewind(line)
-            counter = counter + 1
-
-        if 'BGCapturedOnPump' in line:
-            post = process_bgcapturedonpump(line)
-            counter = counter + 1
-
-        if 'ChangeTempBasalPercent' in line:
-            post = process_changetempbasalpercent(line)
-            counter = counter + 1
             
-        post_id = COLLECTION_TREATMENTS.insert_one(post) 
+        # post_id = COLLECTION_TREATMENTS.insert_one(post) 
     
 time_now = time.time()
 print()
@@ -238,3 +330,5 @@ print(counter,' posts added to DB')
           
 file.close()
 DBclient.close()
+
+'''
