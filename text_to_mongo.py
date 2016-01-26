@@ -210,54 +210,60 @@ def insert_datetime_field(input_list_of_lists):
     return master_list_of_lists
 
 
-def time_between_events(sorted_lists):
+#TODO: see if functions below are actually working, clean up if statement mess a bit
+def remove_duplicate_events(sorted_lists):
+    print('length of sorted_lists =',len(sorted_lists)) 
+    skip_next = False   
+    
+    sorted_lists.append([[],[],[]])  # so iterator doesn't go out of index range
     list_of_posts = []    
-    print('length of sorted_lists =',len(sorted_lists))
-    for i in range (1,len(sorted_lists)):
-        print('i =',i)
-        prev = sorted_lists[i-1]
-        curr = sorted_lists[i]
-        A = 'BolusNormal'
-        B = 'BolusWizardBolusEstimate'
 
-        time_delta_seconds = (curr[0] - prev[0]).total_seconds()
-        if time_delta_seconds < 5:
-            print(time_delta_seconds)
-            print(curr)
-            print()
-            print(prev)
-            print()
-            if prev[2] == A and curr[2] == B:
-                case = 'X'
-            elif prev[2] == B and curr[2] == A:
-                case = 'Y'
-            else:
-                case = 'Z'
+    for i in range (0,len(sorted_lists)-1):      
+        if skip_next == True:
+            skip_next = False
         else:
-            case = 'Z'
-            
-        if case == 'X':
-            new_insulin = prev[1]['insulin']
-            curr[1]['insulin'] = new_insulin
-            post = curr[1]
-        if case == 'Y':
-            new_insulin = curr[1]['insulin']
-            prev[1]['insulin'] = new_insulin                
-            post = prev[1]
-        if case == 'Z':
-            post =  prev[1]
-        
-        list_of_posts.append(post)
-    return(list_of_posts)
-#TODO this isn't working.  Doesn't get rid of lines that are duplicate.  Also,
-# very ugly code.
-                
-            
-# If the two are less than 5.0 seconds apart, and one is BolusNormal and the 
-# other is BolusWizardBolusEstimate
-# Look at insulin in both of them.  If insulin in BolusNormal is different
-# then in BolusWizardBolusEstimate, use BolusNormal insulin.
-# write out the line if it was updated or if there wasn't a match
+            print('i =',i)
+            print()  
+            curr = sorted_lists[i]
+            next = sorted_lists[i+1]
+            A = 'BolusNormal'
+            B = 'BolusWizardBolusEstimate'
+
+            if curr[2] == B and next[2] == A:
+                time_delta_seconds = (next[0] - curr[0]).total_seconds()
+                if time_delta_seconds < 5:
+                    print(time_delta_seconds)
+                    print(curr)
+                    print()
+                    print(next)
+                    print()
+                    post = meld_two_bolus_lines(curr,next)
+                    print(post)
+                    skip_next = True
+            if curr[2] == A and next[2] == B:
+                time_delta_seconds = (next[0] - curr[0]).total_seconds()
+                if time_delta_seconds < 5:
+                    print(time_delta_seconds)
+                    print(curr)
+                    print()
+                    print(next)
+                    print()
+                    post = meld_two_bolus_lines(next,curr)
+                    print(post)
+                    skip_next = True
+            else:
+                post = curr[1]
+                i = i + 1
+            list_of_posts.append(post)
+    sorted_lists = sorted_lists[0:-1]
+    return list_of_posts
+
+
+def meld_two_bolus_lines(BolusWizardEstimate,BolusNormal):         
+    new_insulin = BolusNormal[1]['insulin']
+    BolusWizardEstimate[1]['insulin'] = new_insulin
+    post = BolusWizardEstimate[1]
+    return(post)
             
 
 def decode_parsed_lists(parsed_lists):
@@ -304,7 +310,7 @@ datetime_sortable_lists = insert_datetime_field(parsed_lists)
 
 sorted_lists = sorted(datetime_sortable_lists, key=lambda x: x[0])
 
-list_of_posts = time_between_events(sorted_lists)
+list_of_posts = remove_duplicate_events(sorted_lists)
 
 
 #-------------------------------------------------------------------------------------
