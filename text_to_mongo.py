@@ -46,7 +46,9 @@ import datetime
 # USER INPUTS
 #---------------------------------------------------------------------------------------------------
 INPUT_FILENAME = 'testoutput.txt'
-
+USE_CONFIG_FILE_FOR_LOGIN = False
+MONGO_URL = 'mongodb://DataIn:g8cr3Xyvg9h8@ds054298.mongolab.com:54298/mikestebbinsdb2'
+DB_NAME = 'mikestebbinsdb2'
 
 # FUNCTIONS
 #---------------------------------------------------------------------------------------------------
@@ -154,8 +156,6 @@ def obtain_mongo_login_info():
     # MONGOLAB DATABASE LOG-IN INFO PULLED FROM CONFIG FILE (CREATE YOUR OWN LIKE IN EXAMPLE)
     with open('.config') as f:
         config = f.read().splitlines()
-#    MONGO_URL = 'mongodb://DataIn:g8cr3Xyvg9h8@ds054298.mongolab.com:54298/mikestebbinsdb2'
-#    DB_NAME = 'mikestebbinsdb2'
     MONGO_URL = config[0]
     DB_NAME = config[1]
     return[MONGO_URL,DB_NAME]
@@ -226,10 +226,10 @@ def remove_duplicate_events(sorted_lists):
             print()  
             curr = sorted_lists[i]
             next = sorted_lists[i+1]
-            A = 'BolusNormal'
-            B = 'BolusWizardBolusEstimate'
+            labelA = 'BolusNormal'
+            labelB = 'BolusWizardBolusEstimate'
 
-            if curr[2] == B and next[2] == A:
+            if curr[2] == labelB and next[2] == labelA:
                 time_delta_seconds = (next[0] - curr[0]).total_seconds()
                 if time_delta_seconds < 5:
                     print(time_delta_seconds)
@@ -240,7 +240,7 @@ def remove_duplicate_events(sorted_lists):
                     post = meld_two_bolus_lines(curr,next)
                     print(post)
                     skip_next = True
-            if curr[2] == A and next[2] == B:
+            if curr[2] == labelA and next[2] == labelB:
                 time_delta_seconds = (next[0] - curr[0]).total_seconds()
                 if time_delta_seconds < 5:
                     print(time_delta_seconds)
@@ -291,7 +291,8 @@ print('----------------------------------------------------------------------')
 
 time_then = time.time()
 
-MONGO_URL,DB_NAME = obtain_mongo_login_info()
+if USE_CONFIG_FILE_FOR_LOGIN == True:
+    MONGO_URL,DB_NAME = obtain_mongo_login_info()
 
 connect_to_mongo(MONGO_URL,DB_NAME)
 
