@@ -45,6 +45,7 @@ import datetime
 
 # USER INPUTS
 #---------------------------------------------------------------------------------------------------
+DUPLICATE_THRESHOLD_IN_SECONDS = 5
 INPUT_FILENAME = 'testoutput.txt'
 USE_CONFIG_FILE_FOR_LOGIN = False
 MONGO_URL = 'mongodb://DataIn:g8cr3Xyvg9h8@ds054298.mongolab.com:54298/mikestebbinsdb2'
@@ -229,6 +230,20 @@ def remove_duplicate_events(sorted_lists):
             labelA = 'BolusNormal'
             labelB = 'BolusWizardBolusEstimate'
 
+            time_delta_seconds = (next[0] - curr[0]).total_seconds()
+            if time_delta_seconds < DUPLICATE_THRESHOLD_IN_SECONDS:
+                print(time_delta_seconds)
+                print(curr), print()
+                print(next), print()
+                if curr[2] == labelB and next[2] == labelA:
+                    post = meld_two_bolus_lines(curr,next)
+                    print(post)
+                    skip_next = True
+                if curr[2] == labelA and next[2] == labelB:
+                    post = meld_two_bolus_lines(next,curr)
+                    print(post)
+                    skip_next = True
+'''
             if curr[2] == labelB and next[2] == labelA:
                 time_delta_seconds = (next[0] - curr[0]).total_seconds()
                 if time_delta_seconds < 5:
@@ -251,6 +266,7 @@ def remove_duplicate_events(sorted_lists):
                     post = meld_two_bolus_lines(next,curr)
                     print(post)
                     skip_next = True
+                    '''       
             else:
                 post = curr[1]
                 i = i + 1
