@@ -75,9 +75,8 @@ search_strings_list = ['BolusNormal',
 
 # USER INPUTS
 #---------------------------------------------------------------------------------------------------
-INPUT_FILE = 'CareLink-Export-1451459738062_short.csv'
+INPUT_FILE = 'CareLink-Export-1451459738062.csv'
 OUTPUT_FILE = 'testoutput.txt'
-WRITE_ONLY_TRUNCATED = True   # set to false for debug output
 
 
 # FUNCTIONS
@@ -140,7 +139,6 @@ def convert_to_utc_timedate(input_timedate):
 
 def parse_data_type_00(master_parsed_list,list_of_pertinent_lists):
     # [0] BolusNormal
-    counter = 0
     for line in list_of_pertinent_lists[0]:
         parsed_line = line.split(',')
         timestamp = parsed_line[3]
@@ -163,7 +161,6 @@ def parse_data_type_00(master_parsed_list,list_of_pertinent_lists):
 def parse_data_type_01(master_parsed_list,list_of_pertinent_lists):
     # [1] BolusWizardBolusEstimate
     # BG_INPUT=0, BG_UNITS=mg dl, CARB_INPUT=35, CARB_UNITS=grams, CARB_RATIO=12, INSULIN_SENSITIVITY=50, BG_TARGET_LOW=80, BG_TARGET_HIGH=120, BOLUS_ESTIMATE=2.9, CORRECTION_ESTIMATE=0, FOOD_ESTIMATE=2.9, UNABSORBED_INSULIN_TOTAL=0, UNABSORBED_INSULIN_COUNT=2, ACTION_REQUESTOR=paradigm link or b key
-    counter = 0
     for line in list_of_pertinent_lists[1]:
         parsed_line = line.split(',')
         timestamp = parsed_line[3] 
@@ -193,7 +190,6 @@ def parse_data_type_01(master_parsed_list,list_of_pertinent_lists):
 
 def parse_data_type_02(master_parsed_list,list_of_pertinent_lists):
     # [2] Rewind
-    counter = 0
     for line in list_of_pertinent_lists[2]:
         parsed_line = line.split(',')
         timestamp = parsed_line[3] 
@@ -207,7 +203,6 @@ def parse_data_type_02(master_parsed_list,list_of_pertinent_lists):
 
 def parse_data_type_03(master_parsed_list,list_of_pertinent_lists):
     # [3] BGCapturedOnPump
-    counter = 0
     for line in list_of_pertinent_lists[3]:
         parsed_line = line.split(',')
         timestamp = parsed_line[3] 
@@ -228,7 +223,6 @@ def parse_data_type_03(master_parsed_list,list_of_pertinent_lists):
 
 def parse_data_type_04(master_parsed_list,list_of_pertinent_lists):
     # [4] BolusSquare
-    counter = 0
     for line in list_of_pertinent_lists[4]:
         parsed_line = line.split(',')
         timestamp = parsed_line[3]
@@ -259,7 +253,6 @@ def parse_data_type_04(master_parsed_list,list_of_pertinent_lists):
 
 def parse_data_type_05(master_parsed_list,list_of_pertinent_lists):
     # [5] ChangeTempBasalPercent
-    counter = 0
     for line in list_of_pertinent_lists[5]:
         parsed_line = line.split(',')
         timestamp = parsed_line[3]
@@ -333,5 +326,3 @@ out_file = open(OUTPUT_FILE,'w')
 write_file_header_info(search_strings_list)
 write_to_text_file(master_parsed_list)
 out_file.close()
-
-# TODO: figure out how to turn text file into MongoDB entries for 6 entry types recorded
