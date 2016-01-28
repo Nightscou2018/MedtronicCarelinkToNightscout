@@ -51,6 +51,7 @@ USE_CONFIG_FILE_FOR_LOGIN = False
 MONGO_URL = 'mongodb://DataIn:g8cr3Xyvg9h8@ds054298.mongolab.com:54298/mikestebbinsdb2'
 DB_NAME = 'mikestebbinsdb2'
 
+
 # FUNCTIONS
 #---------------------------------------------------------------------------------------------------
 def convert_time_to_utc(input_string):
@@ -72,7 +73,6 @@ def process_bolusnormal(input_line):
             "units": "mg/dL",
             "created_at":datetime_str
             }    
-#    print(post)
     return post
 
 
@@ -100,7 +100,6 @@ def process_boluswizardbolusestimate(input_line):
     temp_dict["created_at"] = datetime_str
 
     post = temp_dict
-#    print(post)
     return post
 
 
@@ -111,7 +110,6 @@ def process_rewind(input_line):
             "enteredBy":"computer",
             "created_at":datetime_str
             }    
-#    print(post)
     return post
 
 
@@ -127,7 +125,6 @@ def process_bgcapturedonpump(input_line):
             "units": "mg/dL",
             "created_at":datetime_str
             }    
-#    print(post)
     return post
 
 
@@ -149,7 +146,6 @@ def process_changetempbasalpercent(input_line):
                 "percent": temp_basal_percent,
                 "created_at":datetime_str
                 }    
-#        print(post)
         return post
 
 
@@ -168,9 +164,10 @@ def connect_to_mongo(MONGO_URL,DB_NAME):
         DB = DBclient[DB_NAME]
         COLLECTION_TREATMENTS = DB['treatments']
         print("connected to MongoDB")
+        return [DBclient,COLLECTION_TREATMENTS]
     except:
         print ('can not connect to DB make sure MongoDB is running')
-
+    
 
 def count_mongo_entries():
     try:
@@ -211,8 +208,7 @@ def insert_datetime_field(input_list_of_lists):
     return master_list_of_lists
 
 
-#TODO: see if functions below are actually working, clean up if statement mess a bit
-def remove_duplicate_events(sorted_lists):
+def merge_duplicate_events(sorted_lists):
     print('length of sorted_lists =',len(sorted_lists)) 
     skip_next = False   
     
@@ -230,7 +226,10 @@ def remove_duplicate_events(sorted_lists):
             labelA = 'BolusNormal'
             labelB = 'BolusWizardBolusEstimate'
 
-            time_delta_seconds = (next[0] - curr[0]).total_seconds()
+            if i < len(sorted_lists)-2:         
+                time_delta_seconds = (next[0] - curr[0]).total_seconds()
+            else:
+                time_delta_seconds = 999
             if time_delta_seconds < DUPLICATE_THRESHOLD_IN_SECONDS:
                 print(time_delta_seconds)
                 print(curr), print()
@@ -242,31 +241,7 @@ def remove_duplicate_events(sorted_lists):
                 if curr[2] == labelA and next[2] == labelB:
                     post = meld_two_bolus_lines(next,curr)
                     print(post)
-                    skip_next = True
-'''
-            if curr[2] == labelB and next[2] == labelA:
-                time_delta_seconds = (next[0] - curr[0]).total_seconds()
-                if time_delta_seconds < 5:
-                    print(time_delta_seconds)
-                    print(curr)
-                    print()
-                    print(next)
-                    print()
-                    post = meld_two_bolus_lines(curr,next)
-                    print(post)
-                    skip_next = True
-            if curr[2] == labelA and next[2] == labelB:
-                time_delta_seconds = (next[0] - curr[0]).total_seconds()
-                if time_delta_seconds < 5:
-                    print(time_delta_seconds)
-                    print(curr)
-                    print()
-                    print(next)
-                    print()
-                    post = meld_two_bolus_lines(next,curr)
-                    print(post)
-                    skip_next = True
-                    '''       
+                    skip_next = True  
             else:
                 post = curr[1]
                 i = i + 1
@@ -298,6 +273,29 @@ def decode_parsed_lists(parsed_lists):
         line.insert(0,post)
         master_list.append(line)
     return master_list
+    
+    
+def remove_duplicate_posts(list_of_posts):
+    print('length of input list of posts =', len(list_of_posts))    
+    revised_list_of_posts = []    
+    for i in range (0, len(list_of_posts)):
+        if i == 0:
+            revised_list_of_posts.append(list_of_posts[i])
+        else:
+            if list_of_posts[i] == list_of_posts[i-1]:
+                pass
+            else:
+                revised_list_of_posts.append(list_of_posts[i])
+    print('length of output list of posts =', len(revised_list_of_posts)) 
+    return revised_list_of_posts         
+            
+
+def post_the_posts(COLLECTION_TREATMENTS,list_of_posts):
+    for post in list_of_posts:
+        print (post)
+        post_id = COLLECTION_TREATMENTS.insert_one(post)
+        print (post_id) 
+        time.sleep(0.1)
 
 
 #-----------------------------------------------------------------------------
@@ -310,7 +308,7 @@ time_then = time.time()
 if USE_CONFIG_FILE_FOR_LOGIN == True:
     MONGO_URL,DB_NAME = obtain_mongo_login_info()
 
-connect_to_mongo(MONGO_URL,DB_NAME)
+DBclient,COLLECTION_TREATMENTS = connect_to_mongo(MONGO_URL,DB_NAME)
 
 count_mongo_entries()
 
@@ -327,31 +325,10 @@ datetime_sortable_lists = insert_datetime_field(parsed_lists)
 
 sorted_lists = sorted(datetime_sortable_lists, key=lambda x: x[0])
 
-list_of_posts = remove_duplicate_events(sorted_lists)
+list_of_posts = merge_duplicate_events(sorted_lists)
 
+list_of_posts = remove_duplicate_posts(list_of_posts)
 
-#-------------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------------
-# First, parse each line by commas and convert times to UTC, append to list
-# Then, sort that list by time/date
-# Then, compare delta times line by line, if some are identical or nearly (bolusnormal
-# and boluswizardestimate, grab what is needed, toss the rest, make one line
-
-'''
-
-            
-        # post_id = COLLECTION_TREATMENTS.insert_one(post) 
-    
-time_now = time.time()
-print()
-print('time taken =',time_now-time_then,'seconds')
-print(counter,' posts added to DB')
-          
-file.close()
+post_the_posts(COLLECTION_TREATMENTS,list_of_posts)
+         
 DBclient.close()
-
-'''
