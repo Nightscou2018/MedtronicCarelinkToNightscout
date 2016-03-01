@@ -1,10 +1,4 @@
 '''
-TO-DO:
-- 
-- 
-- Completely rewrite comments 
-'''
-'''
 Copyright (c) 2016 Michael Stebbins
 Based on code from KainokiKaede (https://gist.github.com/KainokiKaede/7251872)
 
@@ -27,12 +21,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 USAGE
- 1. Use movesjson2text.py to generate text file of threshold-exceeding walks, runs, bikes
- 2. Set INPUT_FILENAME below to the name of the text file generated
- 3. Ensure .config file has example text replaced with your actual MongoLab URL and DB name
- 4. Run script. All lines from text file will be entered as separate exercise events
-     into Mongolab database.
- 5. Run reports in Nightscout to see your exercise data on your day-to-day plots
+ 1. Run Carelink with the BG meter to upload data, then export CSV including 
+     date desired.
+ 2. Use carelink_xls_to_text.py to generate text file of all pertinent 
+     medtronic output from carelink .csv file.
+ 3. Set INPUT_FILENAME below to the name of the csv file generated.
+ 4. Run script. All pertinent lines from csv file will be entered as separate 
+     events into Mongolab database.
+ 5. Run reports in Nightscout to see your Medtronic data on your day-to-day plots
  6. Keep fighting the good fight, and kicking diabetes' %$$!
 '''
 
@@ -45,15 +41,26 @@ import datetime
 
 # USER INPUTS
 #---------------------------------------------------------------------------------------------------
-DUPLICATE_THRESHOLD_IN_SECONDS = 5
+DUPLICATE_THRESHOLD_IN_SECONDS = 10
 INPUT_FILENAME = 'testoutput.txt'
 USE_CONFIG_FILE_FOR_LOGIN = False
+
 MONGO_URL = 'mongodb://DataIn:g8cr3Xyvg9h8@ds054298.mongolab.com:54298/mikestebbinsdb2'
 DB_NAME = 'mikestebbinsdb2'
+
+global counter
+counter = 0
 
 
 # FUNCTIONS
 #---------------------------------------------------------------------------------------------------
+def enteredBy_incrementer():
+    global counter
+    counter = counter + 1
+    result = "computer"+str(counter)
+    return result
+
+
 def convert_time_to_utc(input_string):
     # remove the utc offset string from the main string
     create_time_base = input_string[0:19]
@@ -68,7 +75,7 @@ def process_bolusnormal(input_line):
     bolus = input_line[2]
     post = {
             "eventType":"Meal Bolus",
-            "enteredBy":"computer",
+            "enteredBy":enteredBy_incrementer(),
             "insulin": bolus,
             "units": "mg/dL",
             "created_at":datetime_str
@@ -96,7 +103,7 @@ def process_boluswizardbolusestimate(input_line):
         temp_dict["units"] = "mg/dl"
   
     temp_dict["eventType"] = "Meal Bolus"
-    temp_dict["enteredBy"] = "computer"
+    temp_dict["enteredBy"] = enteredBy_incrementer()
     temp_dict["created_at"] = datetime_str
 
     post = temp_dict
@@ -107,7 +114,7 @@ def process_rewind(input_line):
     datetime_str = convert_time_to_utc(input_line[1])
     post = {
             "eventType":"Site Change",
-            "enteredBy":"computer",
+            "enteredBy":enteredBy_incrementer(),
             "created_at":datetime_str
             }    
     return post
@@ -119,7 +126,7 @@ def process_bgcapturedonpump(input_line):
    
     post = {
             "eventType": "BG Check",
-            "enteredBy":"computer",
+            "enteredBy":enteredBy_incrementer(),
             "glucose": bg,
             "glucoseType": "Finger",
             "units": "mg/dL",
@@ -141,7 +148,7 @@ def process_changetempbasalpercent(input_line):
     else:
         post = {
                 "eventType": "Temp Basal",
-                "enteredBy":"computer",
+                "enteredBy":enteredBy_incrementer(),
                 "duration": temp_basal_duration,
                 "percent": temp_basal_percent,
                 "created_at":datetime_str
@@ -197,6 +204,21 @@ def parse_lists(input_list_of_lists):
     for line in input_list_of_lists:
         master_list_of_lists.append(line.split(","))
     return master_list_of_lists
+    
+    
+def remove_duplicate_lists(parsed_lists):
+    print('length of input list of lists =',len(parsed_lists))  
+    revised_list_of_posts = []    
+    for i in range (0, len(parsed_lists)):
+        if i == 0:
+            revised_list_of_posts.append(parsed_lists[i])
+        else:
+            if parsed_lists[i] == parsed_lists[i-1]:
+                pass
+            else:
+                revised_list_of_posts.append(parsed_lists[i])
+    print('length of output list of posts =', len(revised_list_of_posts)) 
+    return revised_list_of_posts 
     
 
 def insert_datetime_field(input_list_of_lists):
@@ -292,9 +314,11 @@ def remove_duplicate_posts(list_of_posts):
 
 def post_the_posts(COLLECTION_TREATMENTS,list_of_posts):
     for post in list_of_posts:
-        print (post)
-        post_id = COLLECTION_TREATMENTS.insert_one(post)
-        print (post_id) 
+        try:  
+            post_id = COLLECTION_TREATMENTS.insert_one(post)
+            print (post_id) 
+        except:
+            print (post)
         time.sleep(0.1)
 
 
@@ -316,6 +340,8 @@ counter,master_list = read_lines_from_file()
 print('total lines in file =',counter)
 
 parsed_lists = parse_lists(master_list)
+
+parsed_lists = remove_duplicate_lists(parsed_lists)
 
 decoded_lists = decode_parsed_lists(parsed_lists)
 #now, each entry is [{post dictionary},parsed list from text]
