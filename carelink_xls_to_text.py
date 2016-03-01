@@ -27,32 +27,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 USAGE
- 1. Go to: http://moves-export.herokuapp.com/
- 2. Authenticate by putting PIN number into Moves app on phone
- 3. Pick export from date, and hit Start Export! button
- 4. Once json text is done loading, copy text from output box
- 5. Go to http://jsonlint.com/, paste in code, and hit Validate
-    jsonlint will help identify problems in the file (extra commas, incomplete
-    bracets, etc.) Delete out these extra elements until you have valid json.
- 6. Copy valid json text from jsonlint, paste into text file in python directory.
- 7. Put that filename in as INPUT_FILE below.
- 8. Check all USER INPUTS below, set to appropriate values for you
- 9. Run this script to generate text file of walks, runs, and bikes exceeding
-    the threshold seconds set in INPUTS, with activity start time in UTC time.
-10. Finally, open and run textToMongo.py to upload output file to MongoLab.
+ 1. Run Carelink with the BG meter to upload data, then export CSV including 
+     date desired.
+ 2. Use carelink_xls_to_text.py to generate text file of all pertinent 
+     medtronic output from carelink .csv file.
+ 3. Set INPUT_FILENAME below to the name of the csv file generated.
+ 4. Run script. All pertinent lines from csv file will be entered as separate 
+     events into Mongolab database.
+ 5. Run reports in Nightscout to see your Medtronic data on your day-to-day plots
+ 6. Finally, open and run text_to_mongo.py to upload output file to MongoLab.
 '''
-'''
-DATA FORMATS:
-list_of_days = [date,walking steps, cycle miles, run miles, [walk segments],[bike segments],[run segments]]
-[walk segments] = [['Walk','minutes','steps','start time Local',start time UTC],[next walk segment]]
-[bike segments] = [['Bike','minutes',meters,'start time Local',start time UTC],[next bike segment]]
-[run segments] = [['Run','minutes',meters,'start time Local',start time UTC],[next run segment]]
-
-[list_walks] = [["Walk",duration_min_str,'steps',duration_secs,steps,time_start_local_str,time_start_utc,time_end_utc]]
-[list_bikes] = [["Bike",duration_min_str,'dist_miles',duration_secs,dist_miles,time_start_local_str,time_start_utc,time_end_utc]]   
-[list_runs] = [["Run",duration_min_str,'dist_miles',duration_secs,dist_miles,time_start_local_str,time_start_utc,time_end_utc]]   
-'''
-
 # IMPORTS
 #---------------------------------------------------------------------------------------------------
 import datetime
@@ -75,7 +59,7 @@ search_strings_list = ['BolusNormal',
 
 # USER INPUTS
 #---------------------------------------------------------------------------------------------------
-INPUT_FILE = 'CareLink-Export-1451459738062.csv'
+INPUT_FILE = 'CareLink-Export-1456808318479.csv'
 OUTPUT_FILE = 'testoutput.txt'
 
 
